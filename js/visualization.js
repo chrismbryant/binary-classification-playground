@@ -1,10 +1,42 @@
 /** ---------------------------------- SETUP ---------------------------------- */
 
-function setupSVG(id, width, height) {
-    let svg = d3.select(id)
-        .attr("width", width)
-        .attr("height", height);
-    return svg;
+function setupPage(svgWidth) {
+    
+    let content = d3.select("#content");
+    let contentTable = content.append("table");
+    
+    // Add title
+    contentTable.append("tr")
+        .append("td")
+        .attr("colspan", 3)
+        .append("p")
+        .text("Binary Misclassification Cost")
+        .attr("class", "title");
+
+    contentTable.append("tr").append("td").append("br")
+    contentTable = contentTable.append("tr");
+
+    // Add SVGs
+    let svgTable = contentTable
+        .append("td")
+        .append("div")
+        .attr("id", "svgs")
+        .append("table");
+    let svgCost = addSVG(
+        svgTable, "svg-cost", "Cost", svgWidth, 200);
+    let svgProb = addSVG(
+        svgTable, "svg-prob-calibration", "Probability Calibration", svgWidth, 200);
+    let svgDist = addSVG(
+        svgTable, "svg-dist", "Model Distribution", svgWidth, 200);
+
+    contentTable.append("td").attr("class", "padded");
+
+    // Add sliders
+    contentTable.append("td")
+        .append("div")
+        .attr("id", "sliders");
+    
+    return [svgCost, svgDist, svgProb];
 }
 
 /** -------------------------------- ARRAY MATH -------------------------------- */
@@ -58,8 +90,8 @@ function getBetaPDF(alpha, beta) {
 function getCostCurve(kPos, kNeg) {
     let costs = [];
     const xs = stdlib.linspace(0, 1, curveResolution);
-    const [alphaPos, betaPos] = getAlphaAndBeta(kPos);
-    const [alphaNeg, betaNeg] = getAlphaAndBeta(kNeg);
+    const [alphaPos, betaPos] = getAlphaAndBeta(kPos, shapeMin);
+    const [alphaNeg, betaNeg] = getAlphaAndBeta(kNeg, shapeMin);
     const wPos = imbalance;
     const wNeg = 1 - imbalance;
     for (let i = 0; i < xs.length; i++) {
@@ -207,6 +239,62 @@ function initOptimum(optId, svg) {
 
 /** ------------------------------- `ADD` --------------------------------- */
 
+function addSVG(svgTable, id, label, width, height) {
+    let svg = svgTable
+        .append("tr")
+        .attr("class", "svg-table")
+        .append("td")
+        .attr("class", "svg-table")
+        .append("svg")
+        .attr("id", id)
+        .attr("width", width)
+        .attr("height", height);
+    svg.append("text")
+        .attr("x", 10)
+        .attr("y", 20)
+        .attr("font-size", 14)
+        .text(label);
+    return svg;
+}
+
+function addSliderTable(sliderConfigs, sliderResolution) {
+
+    // Initialize slider table
+    let sliderTable = d3.select("#sliders")
+        .append("table")
+        .attr("class", "slider-table")
+        // .append("td")
+
+    sliderTable.append("tr")
+        .append("td")
+        .attr("colspan", 2)
+        .append("p")
+        .text("Adjust Costs")
+        .attr("class", "slider-heading");
+
+    // Add cost sliders
+    sliderConfigs.slice(0, 5).forEach(sliderConfig => {
+        addSlider(sliderTable, sliderConfig, sliderResolution);
+    });
+
+    let blankRow = sliderTable.append("tr");
+    blankRow.append("br");
+    blankRow.append("br");
+    blankRow.append("br");
+
+    sliderTable.append("tr")
+        .append("td")
+        .attr("colspan", 2)
+        .append("p")
+        .text("Adjust Distribution")
+        .attr("class", "slider-heading");
+
+    // Add distribution sliders
+    sliderConfigs.slice(5, 9).forEach(sliderConfig => {
+        addSlider(sliderTable, sliderConfig, sliderResolution);
+    });
+}
+
 function addSlider(sliderTable, sliderConfig, resolution = 200) {
     
     const min = 0;
@@ -216,7 +304,8 @@ function addSlider(sliderTable, sliderConfig, resolution = 200) {
     const sliderName = sliderConfig[1];
     const value = Math.round(sliderConfig[2] * resolution);
 
-    let row = sliderTable.append("tr");
+    let row = sliderTable
+        .append("tr");
     
     row.append("td")
         .attr("id", `${sliderId}-name`)
@@ -239,9 +328,9 @@ function addClassSliderColor() {
         anticalibrated = true;
         color = "#d62728"
         d3.select("#slider-neg-class-name")
-            .attr("style", `color:${color}`);
+            .attr("style", `color:${color}; font-style:italic`);
         d3.select("#slider-pos-class-name")
-            .attr("style", `color:${color}`);
+            .attr("style", `color:${color}; font-style:italic`);
     } else if (anticalibrated && !reversed) {
         anticalibrated = false;
         d3.select("#slider-neg-class-name")
@@ -252,7 +341,7 @@ function addClassSliderColor() {
 }
 
 function addBetaCurve(k, curveId, svg) {
-    const [alpha, beta] = getAlphaAndBeta(k);
+    const [alpha, beta] = getAlphaAndBeta(k, shapeMin);
     const area = curveId.includes("pos") ? imbalance : (1 - imbalance);
     const pdf = scalarMultiply(getBetaPDF(alpha, beta), area);
     const path = getPath(pdf, [0, betaMax], svg);
@@ -322,9 +411,20 @@ function updateBetaCurve(sliderId, curveId, svgDist, svgProb, svgCost) {
     document.getElementById(sliderId).dispatchEvent(event);
 }
 
-function updateImbalance(svg) {
+function updateImbalance() {
     d3.select("#slider-class-imb").on("input", function () {
         imbalance = this.value / this.max;
+        const event = new Event("input");
+        document.getElementById("slider-pos-class").dispatchEvent(event);
+        document.getElementById("slider-neg-class").dispatchEvent(event);
+    });
+}
+
+function updateShape() {
+    const shapeBounds = [1, 3];
+    const shapeRng = shapeBounds[1] - shapeBounds[0];
+    d3.select("#slider-dist-shape").on("input", function () {
+        shapeMin = shapeBounds[0] + shapeRng * (this.value / this.max);
         const event = new Event("input");
         document.getElementById("slider-pos-class").dispatchEvent(event);
         document.getElementById("slider-neg-class").dispatchEvent(event);
@@ -341,10 +441,11 @@ function updateCostCurve(sliderId, svgCost, svgProb) {
     });
 }
 
-/** ---------------------------------------------------------------- */
+/** ------------------------------- GLOBALS & RUN --------------------------------- */
 
 let anticalibrated = false;
 let imbalance = 0.5;
+let shapeMin = 2;
 let ks = {
     "curve-pos-class": 0,
     "curve-neg-class": 0
@@ -371,26 +472,20 @@ const betaMax = 4;
 const costRng = [-1, 1];
 
 const sliderConfigs = [
+    ["slider-FP-cost", "Cost (FP)", weights["FP"]],
+    ["slider-FN-cost", "Cost (FN)", weights["FN"]],
+    ["slider-TP-benefit", "Benefit (TP)", weights["TP"]],
+    ["slider-TN-benefit", "Benefit (TN)", weights["TN"]],
+    ["slider-review-cost", "Review Cost", weights["review"]],
     ["slider-neg-class", "Negative Class", 0],
     ["slider-pos-class", "Positive Class", 1],
-    ["slider-class-imb", "Imbalance", 0.5],
-    ["slider-FP-cost", "FP Cost", weights["FP"]],
-    ["slider-FN-cost", "FN Cost", weights["FN"]],
-    ["slider-TP-benefit", "TP Benefit", weights["TP"]],
-    ["slider-TN-benefit", "TN Benefit", weights["TN"]],
-    ["slider-review-cost", "Review Cost", weights["review"]]
+    ["slider-class-imb", "Balance", 0.5],
+    ["slider-dist-shape", "Shape", 0.5]
 ];
 
-let svgCost = setupSVG("#svg-cost", svgWidth, 200);
-let svgDist = setupSVG("#svg-dist", svgWidth, 200);
-let svgProb = setupSVG("#svg-prob-calibration", svgWidth, 200);
+let [svgCost, svgDist, svgProb] = setupPage(svgWidth);
 
-let sliderTable = d3.select("#sliders").append("table");
-
-sliderConfigs.forEach(sliderConfig => {
-    addSlider(sliderTable, sliderConfig, sliderResolution);
-});
-
+addSliderTable(sliderConfigs, sliderResolution);
 
 initDistCurve(svgDist);
 initBetaCurve("slider-neg-class", "curve-neg-class", "#1F77B4", svgDist);
@@ -404,7 +499,8 @@ initOptimum("prob-optimum", svgProb);
 
 updateBetaCurve("slider-neg-class", "curve-neg-class", svgDist, svgProb, svgCost);
 updateBetaCurve("slider-pos-class", "curve-pos-class", svgDist, svgProb, svgCost);
-updateImbalance(svgDist);
+updateImbalance();
+updateShape();
 updateCostCurve("slider-FP-cost", svgCost, svgProb);
 updateCostCurve("slider-FN-cost", svgCost, svgProb);
 updateCostCurve("slider-TP-benefit", svgCost, svgProb);

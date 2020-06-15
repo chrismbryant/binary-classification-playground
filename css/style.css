@@ -19,11 +19,17 @@ svg {
 
 table {
   margin: auto;
+  border-collapse: collapse;
+  white-space: nowrap;
 }
 
 table td {
   font-size: 20px;
   padding: 5px;
+}
+
+td.padded {
+  padding: 10px;
 }
 
 .left-align {
@@ -32,6 +38,19 @@ table td {
 
 .right-align {
   text-align: right;
+}
+
+.title {
+  font-size: 30px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.slider-heading {
+  font-size: 22px;
+  font-style: italic;
+  font-weight: bold;
+  text-align: center;
 }
 
 .sliders {
