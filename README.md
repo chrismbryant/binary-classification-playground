@@ -1,2 +1,2 @@
 # binary-misclassification-cost
-Interactively visualize the misclassification cost of a binary classification model.
+[Interactively visualize](https://chrismbryant.github.io/binary-misclassification-cost/) the misclassification cost of a binary classification model.
