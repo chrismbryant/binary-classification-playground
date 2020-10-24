@@ -3,7 +3,7 @@ function addSpinner(svg) {
     const rand = Math.random() * 60;
     let dots = svg
         .append("g")
-        .attr("class", "dots");
+        .attr("class", "spinner-dots");
     for (i = 0; i < numDots; i++) {
         let g = dots.append("g");
         const width = svg.attr("width");
@@ -20,5 +20,5 @@ function addSpinner(svg) {
 }
 
 function removeAllSpinners() {
-    d3.selectAll(".dots").remove();
+    d3.selectAll(".spinner-dots").remove();
 }
