@@ -48,14 +48,18 @@ main();
 function main() {
 
     let [svgCost, svgDist, svgProb] = setupPage(svgWidth);
+    addSpinner(svgCost);
+    addSpinner(svgDist);
+    addSpinner(svgProb);
     addSliderTable(sliderConfigs, sliderResolution);
     loadScript(stdlibPath, function() {
+        removeAllSpinners();
         addViz(svgCost, svgDist, svgProb);
     });
 }
 
 function addViz(svgCost, svgDist, svgProb) {
-    
+
     initDistCurve(svgDist);
     initBetaCurve("slider-neg-class", "curve-neg-class", "#1F77B4", svgDist);
     initBetaCurve("slider-pos-class", "curve-pos-class", "#FF7F0E", svgDist);
