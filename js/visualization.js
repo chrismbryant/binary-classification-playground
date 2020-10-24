@@ -1,3 +1,81 @@
+/** ------------------------------- GLOBALS & RUN --------------------------------- */
+
+const stdlibPath = "https://unpkg.com/@stdlib/stdlib@0.0.91/dist/stdlib-flat.min.js";
+
+let anticalibrated = false;
+let imbalance = 0.5;
+let shapeMin = 2;
+let ks = {
+    "curve-pos-class": 0,
+    "curve-neg-class": 0
+}
+let weights = {
+    "FP": 0.3,
+    "FN": 0.2,
+    "TP": 0,
+    "TN": 0,
+    "review": 0
+};
+let curves = {
+    "curve-neg-class": [],
+    "curve-pos-class": [],
+    "dist": [],
+    "prob-calibration": [],
+    "cost": []
+};
+
+const svgWidth = 600;
+const curveResolution = 500;
+const sliderResolution = 500;
+const betaMax = 4;
+const costRng = [-1, 1];
+
+const sliderConfigs = [
+    ["slider-FP-cost", "Cost (FP)", weights["FP"]],
+    ["slider-FN-cost", "Cost (FN)", weights["FN"]],
+    ["slider-TP-benefit", "Benefit (TP)", weights["TP"]],
+    ["slider-TN-benefit", "Benefit (TN)", weights["TN"]],
+    ["slider-review-cost", "Review Cost", weights["review"]],
+    ["slider-neg-class", "Negative Class", 0],
+    ["slider-pos-class", "Positive Class", 1],
+    ["slider-class-imb", "Balance", 0.5],
+    ["slider-dist-shape", "Shape", 0.5]
+];
+
+// Run all
+main();
+
+function main() {
+
+    let [svgCost, svgDist, svgProb] = setupPage(svgWidth);
+    addSliderTable(sliderConfigs, sliderResolution);
+    loadScript(stdlibPath, function() {
+        addViz(svgCost, svgDist, svgProb);
+    });
+}
+
+function addViz(svgCost, svgDist, svgProb) {
+    
+    initDistCurve(svgDist);
+    initBetaCurve("slider-neg-class", "curve-neg-class", "#1F77B4", svgDist);
+    initBetaCurve("slider-pos-class", "curve-pos-class", "#FF7F0E", svgDist);
+    initProbDiagonal(svgProb);
+    initProbCalibration(svgProb);
+    initCostCurve(svgCost);
+    initOptimum("cost-optimum", svgCost);
+    initOptimum("prob-optimum", svgProb);
+
+    updateBetaCurve("slider-neg-class", "curve-neg-class", svgDist, svgProb, svgCost);
+    updateBetaCurve("slider-pos-class", "curve-pos-class", svgDist, svgProb, svgCost);
+    updateImbalance();
+    updateShape();
+    updateCostCurve("slider-FP-cost", svgCost, svgProb);
+    updateCostCurve("slider-FN-cost", svgCost, svgProb);
+    updateCostCurve("slider-TP-benefit", svgCost, svgProb);
+    updateCostCurve("slider-TN-benefit", svgCost, svgProb);
+    updateCostCurve("slider-review-cost", svgCost, svgProb);
+}
+
 /** ---------------------------------- SETUP ---------------------------------- */
 
 function setupPage(svgWidth) {
@@ -38,26 +116,6 @@ function setupPage(svgWidth) {
     
     return [svgCost, svgDist, svgProb];
 }
-
-/** -------------------------------- ARRAY MATH -------------------------------- */
-
-function scalarMultiply(coords, k) {
-    return coords.map(([x, y]) => [x, k * y]);
-}
-
-function sumCurves(c1, c2) {
-    return c1.map(([x, y], i) => [x, y + c2[i][1]]);
-};
-
-function divideCurves(c1, c2) {
-    let divided =  c1.map(([x, y], i) => {
-        const y2 = c2[i][1];
-        return [x, y / y2];
-    });
-    divided.shift();
-    divided.pop();
-    return divided;
-};
 
 /** -------------------------------- `GET` -------------------------------- */
 
@@ -185,6 +243,7 @@ function getPosition(data, yRng, svg) {
 
 function initBetaCurve(sliderId, curveId, color, svgDist, svgProb) {
     svgDist.append("path")
+        .attr("class", "curve")
         .attr("id", curveId)
         .attr("stroke-width", 3)
         .attr("stroke", color);
@@ -192,6 +251,7 @@ function initBetaCurve(sliderId, curveId, color, svgDist, svgProb) {
 
 function initDistCurve(svg) {
     svg.append("path")
+        .attr("class", "curve")
         .attr("id", "curve-dist")
         .attr("stroke-width", 3)
         .attr("stroke", "#2ca02c");
@@ -202,16 +262,19 @@ function initProbDiagonal(svg) {
     const w = svg.attr("width");
     const h = svg.attr("height");
     svg.append("path")
+        .attr("class", "curve")
         .attr("id", "calibration-line")
         .attr("stroke-width", 2)
         .attr("stroke", "black")
         .attr("stroke-opacity", 0.5)
         .attr("stroke-dasharray", "5,5")
-        .attr("d", `M 0 ${h} L ${w} 0`)
+        .attr("d", `M 0 ${h} L ${w} 0`);
+    highlightCurve("#calibration-line");
 }
 
 function initProbCalibration(svg) {
     svg.append("path")
+        .attr("class", "curve")
         .attr("id", "calibration-curve")
         .attr("stroke-width", 3)
         .attr("stroke", "#5c6068")
@@ -220,6 +283,7 @@ function initProbCalibration(svg) {
 
 function initCostCurve(svg) {
     svg.append("path")
+        .attr("class", "curve")
         .attr("id", "curve-cost")
         .attr("stroke-width", 3)
         .attr("stroke", "#d62728");
@@ -237,7 +301,38 @@ function initOptimum(optId, svg) {
         .attr("fill", "white");
 }
 
+/** ------------------------------ Style -------------------------------- */
+
+function highlightCurve(objectId) {
+    let object = d3.select(objectId);
+    defaultStrokeWidth = object.attr("stroke-width");
+    object
+        .on("mouseover", function() {
+            d3.select(this).transition()
+                .ease(d3.easeQuadInOut)
+                .duration(100)
+                .attr("stroke-width", 5);})
+        .on("mouseout", function() {
+            d3.select(this).transition()
+                .ease(d3.easeQuadInOut)
+                .duration(100)
+                .attr("stroke-width", defaultStrokeWidth);
+        });
+}
+
 /** ------------------------------- `ADD` --------------------------------- */
+
+function addDescription(svg, description) {
+    const width = svg.attr("width");
+    const height = svg.attr("height");
+    svg.append("text")
+        .attr("text-anchor", "end")
+        .attr("x", width - 10)
+        .attr("y", height - 10)
+        .attr("font-size", 14)
+        // .text("$P(s) = \\frac{A}{B}$");
+        // .text(description);
+}
 
 function addSVG(svgTable, id, label, width, height) {
     let svg = svgTable
@@ -254,6 +349,7 @@ function addSVG(svgTable, id, label, width, height) {
         .attr("y", 20)
         .attr("font-size", 14)
         .text(label);
+    addDescription(svg, "Hello!");
     return svg;
 }
 
@@ -347,6 +443,7 @@ function addBetaCurve(k, curveId, svg) {
     const path = getPath(pdf, [0, betaMax], svg);
     d3.select(`#${curveId}`).attr("d", path);
     curves[curveId] = pdf;
+    highlightCurve(`#${curveId}`);
 }
 
 function addDistCurve(svg) {
@@ -355,6 +452,7 @@ function addDistCurve(svg) {
         curves["curve-neg-class"]);
     const path = getPath(curves["dist"], [0, betaMax], svg);
     svg.select("#curve-dist").attr("d", path);
+    highlightCurve("#curve-dist");
 }
 
 function addProbCalibration(svg) {
@@ -362,7 +460,8 @@ function addProbCalibration(svg) {
         curves["curve-pos-class"],
         curves["dist"]);
     const path = getPath(curves["prob-calibration"], [0, 1], svg);
-    d3.select("#calibration-curve").attr("d", path);
+    d3.select("#calibration-curve").attr("d", path)
+    highlightCurve("#calibration-curve");
 }
 
 function addCostCurve(svg) {
@@ -370,7 +469,8 @@ function addCostCurve(svg) {
     const kNeg = ks["curve-neg-class"];
     curves["cost"] = getCostCurve(kPos, kNeg);
     const path = getPath(curves["cost"], costRng, svg);
-    d3.select("#curve-cost").attr("d", path);}
+    d3.select("#curve-cost").attr("d", path);
+    highlightCurve("#curve-cost");}
 
 function addOptimum(weights, svgCost, svgProb) {
     
@@ -440,69 +540,3 @@ function updateCostCurve(sliderId, svgCost, svgProb) {
         addOptimum(weights, svgCost, svgProb);
     });
 }
-
-/** ------------------------------- GLOBALS & RUN --------------------------------- */
-
-let anticalibrated = false;
-let imbalance = 0.5;
-let shapeMin = 2;
-let ks = {
-    "curve-pos-class": 0,
-    "curve-neg-class": 0
-}
-let weights = {
-    "FP": 0.3,
-    "FN": 0.2,
-    "TP": 0,
-    "TN": 0,
-    "review": 0
-};
-let curves = {
-    "curve-neg-class": [],
-    "curve-pos-class": [],
-    "dist": [],
-    "prob-calibration": [],
-    "cost": []
-};
-
-const svgWidth = 600;
-const curveResolution = 500;
-const sliderResolution = 500;
-const betaMax = 4;
-const costRng = [-1, 1];
-
-const sliderConfigs = [
-    ["slider-FP-cost", "Cost (FP)", weights["FP"]],
-    ["slider-FN-cost", "Cost (FN)", weights["FN"]],
-    ["slider-TP-benefit", "Benefit (TP)", weights["TP"]],
-    ["slider-TN-benefit", "Benefit (TN)", weights["TN"]],
-    ["slider-review-cost", "Review Cost", weights["review"]],
-    ["slider-neg-class", "Negative Class", 0],
-    ["slider-pos-class", "Positive Class", 1],
-    ["slider-class-imb", "Balance", 0.5],
-    ["slider-dist-shape", "Shape", 0.5]
-];
-
-let [svgCost, svgDist, svgProb] = setupPage(svgWidth);
-
-addSliderTable(sliderConfigs, sliderResolution);
-
-initDistCurve(svgDist);
-initBetaCurve("slider-neg-class", "curve-neg-class", "#1F77B4", svgDist);
-initBetaCurve("slider-pos-class", "curve-pos-class", "#FF7F0E", svgDist);
-initProbDiagonal(svgProb);
-initProbCalibration(svgProb);
-initCostCurve(svgCost);
-initOptimum("cost-optimum", svgCost);
-initOptimum("prob-optimum", svgProb);
-
-
-updateBetaCurve("slider-neg-class", "curve-neg-class", svgDist, svgProb, svgCost);
-updateBetaCurve("slider-pos-class", "curve-pos-class", svgDist, svgProb, svgCost);
-updateImbalance();
-updateShape();
-updateCostCurve("slider-FP-cost", svgCost, svgProb);
-updateCostCurve("slider-FN-cost", svgCost, svgProb);
-updateCostCurve("slider-TP-benefit", svgCost, svgProb);
-updateCostCurve("slider-TN-benefit", svgCost, svgProb);
-updateCostCurve("slider-review-cost", svgCost, svgProb);
