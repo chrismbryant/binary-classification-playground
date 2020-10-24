@@ -1,7 +1,6 @@
 function addSpinner(svg) {
     const numDots = 3;
     const rand = Math.random() * 60;
-    console.log(rand);
     let dots = svg
         .append("g")
         .attr("class", "dots");
