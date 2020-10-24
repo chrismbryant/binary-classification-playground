@@ -48,8 +48,6 @@ td.padded {
 
 .curve {
   cursor: pointer;
-  filter: drop-shadow(30px 10px 4px #4444dd);
-  transition: box-shadow 0.3s ease-in-out;
 }
 
 .slider-heading {
