@@ -11,7 +11,7 @@ body {
 }
 
 /* See: https://tobiasahlin.com/blog/how-to-animate-box-shadow/ */
-svg {
+svg.svg-plot {
   display: block;
   margin: 0 auto;
   background-color: white;
@@ -20,7 +20,7 @@ svg {
   transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
-svg:hover {
+svg.svg-plot:hover {
   box-shadow: 2px 5px 10px rgba(0,0,0,0.3);
   -webkit-transform: scale(1.03, 1.03);
   transform: scale(1.03, 1.03);
@@ -57,7 +57,6 @@ td.padded {
 
 .equation {
   opacity: 0;
-  font-size: 20;
 }
 
 .visible {
@@ -143,4 +142,54 @@ td.padded {
   background: #1f77b4;
   opacity: 1;
   cursor: pointer;
+}
+
+/* See: https://www.w3schools.com/howto/tryit.asp?filename=tryhow_css_tooltip */
+.hasTooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.hasTooltip .tooltiptext {
+  visibility: hidden;
+  width: 80px;
+  margin-left: -40px;
+  left: 50%;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  border-radius: 16px;
+  padding: 5px 0;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.hasTooltip .tooltiptext::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #555 transparent transparent transparent;
+}
+
+.hasTooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+
+.bubble {
+  font-size: 16px!important;
+  background: #555;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 16px;
+  position: relative;
+  /*left: -500px;*/
+  /*transform: translate(-50%, -30px);*/
 }

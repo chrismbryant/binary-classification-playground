@@ -44,15 +44,15 @@ const betaMax = 4;
 const costRng = [-1, 1];
 
 const sliderConfigs = [
-    ["slider-FP-cost", "Cost (FP)", weights["FP"]],
-    ["slider-FN-cost", "Cost (FN)", weights["FN"]],
-    ["slider-TP-benefit", "Benefit (TP)", weights["TP"]],
-    ["slider-TN-benefit", "Benefit (TN)", weights["TN"]],
-    ["slider-review-cost", "Review Cost", weights["review"]],
-    ["slider-neg-class", "Negative Class", 0],
-    ["slider-pos-class", "Positive Class", 0.84],
-    ["slider-class-imb", "Balance", 0.5],
-    // ["slider-dist-shape", "Shape", 0.5]
+    ["slider-FP-cost", "Cost (FP)", weights["FP"], "\\(k_{FP}\\)"],
+    ["slider-FN-cost", "Cost (FN)", weights["FN"], "\\(k_{FN}\\)"],
+    ["slider-TP-benefit", "Benefit (TP)", weights["TP"], "\\(k_{TP}\\)"],
+    ["slider-TN-benefit", "Benefit (TN)", weights["TN"], "\\(k_{TN}\\)"],
+    ["slider-review-cost", "Review Cost", weights["review"], "\\(k_{rev}\\)"],
+    ["slider-neg-class", "Negative Class", 0, ""],
+    ["slider-pos-class", "Positive Class", 0.84, ""],
+    ["slider-class-imb", "Balance", 0.5, ""],
+    // ["slider-dist-shape", "Shape", 0.5, ""]
 ];
 
 // Run all
@@ -428,6 +428,7 @@ function addSVG(svgTable, id, label, width, height) {
         .attr("class", "svg-table")
         .append("svg")
         .attr("id", id)
+        .attr("class", "svg-plot")
         .attr("width", width)
         .attr("height", height);
     svg.append("text")
@@ -477,6 +478,14 @@ function addSliderTable(sliderConfigs, sliderResolution) {
     });
 }
 
+function addTooltip(divId, text) {
+    d3.select(`#${divId}`)
+        .classed("hasTooltip", true)
+        .append("span")
+        .attr("class", "tooltiptext")
+        .text(text);
+}
+
 function addSlider(sliderTable, sliderConfig, resolution = 200) {
     
     const min = 0;
@@ -490,18 +499,29 @@ function addSlider(sliderTable, sliderConfig, resolution = 200) {
         .append("tr");
     
     row.append("td")
-        .attr("id", `${sliderId}-name`)
         .attr("class", "right-align")
+        .append("div")
+        .attr("id", `${sliderId}-name`)
         .text(sliderName);
 
-    row.append("td")
-        .append("input")
+    if (sliderConfig[3] != "") {
+        addTooltip(`${sliderId}-name`, sliderConfig[3]);
+    }
+
+    let cell = row.append("td")
+
+    cell.append("input")
         .attr("type", "range")
         .attr("class", "slider")
         .attr("id", sliderId)
         .attr("min", min)
         .attr("max", max)
         .attr("value", value);
+
+    // cell.append("output")
+    //     .attr("id", `${sliderId}-output`)
+    //     .attr("class", "bubble")
+    //     .text(value / max);
 }
 
 function addClassSliderColor() {
@@ -613,6 +633,14 @@ function addOptimum(weights, svgCost, svgProb) {
         })
 }
 
+function addSliderOutput(sliderId, value) {
+    // const sliderWidth = 400;
+    // const position = value * 400;
+    // console.log(sliderWidth);
+    // d3.select(`#${sliderId}-output`)
+    //     .text(value);
+}
+
 /** -------------------------------- `UPDATE` -------------------------------- */
 
 function updateBetaCurve(sliderId, curveId, svgDist, svgProb, svgCost) {
@@ -625,15 +653,18 @@ function updateBetaCurve(sliderId, curveId, svgDist, svgProb, svgCost) {
         addCostCurve(svgCost);
         addOptimum(weights, svgCost, svgProb);
         addClassSliderColor();
+        addSliderOutput(sliderId, k);
     });
     const event = new Event("input");
     document.getElementById(sliderId).dispatchEvent(event);
 }
 
 function updateImbalance() {
-    d3.select("#slider-class-imb").on("input", function () {
+    const sliderId = "slider-class-imb";
+    d3.select(`#${sliderId}`).on("input", function () {
         imbalance = this.value / this.max;
         const event = new Event("input");
+        addSliderOutput(sliderId, imbalance);
         document.getElementById("slider-pos-class").dispatchEvent(event);
         document.getElementById("slider-neg-class").dispatchEvent(event);
     });
@@ -642,8 +673,11 @@ function updateImbalance() {
 function updateShape() {
     const shapeBounds = [1, 3];
     const shapeRng = shapeBounds[1] - shapeBounds[0];
-    d3.select("#slider-dist-shape").on("input", function () {
-        shapeMin = shapeBounds[0] + shapeRng * (this.value / this.max);
+    const sliderId = "slider-dist-shape"; 
+    d3.select(`#${sliderId}`).on("input", function () {
+        const frac = this.value / this.max;
+        shapeMin = shapeBounds[0] + shapeRng * frac;
+        addSliderOutput(sliderId, frac);
         const event = new Event("input");
         document.getElementById("slider-pos-class").dispatchEvent(event);
         document.getElementById("slider-neg-class").dispatchEvent(event);
@@ -657,5 +691,6 @@ function updateCostCurve(sliderId, svgCost, svgProb) {
         weights[key] = w;
         addCostCurve(svgCost);
         addOptimum(weights, svgCost, svgProb);
+        addSliderOutput(sliderId, w);
     });
 }
