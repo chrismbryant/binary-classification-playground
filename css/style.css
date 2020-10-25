@@ -64,6 +64,12 @@ td.padded {
   opacity: 1;
 }
 
+.optimum:hover {
+  r: 8;
+  -webkit-transition: 0.1s ease-in-out;
+  transition: 0.1s ease-in-out;
+}
+
 .smooth {
   -webkit-transition: 0.1s ease-in-out;
   transition: 0.1s ease-in-out;
@@ -80,6 +86,14 @@ td.padded {
 .thick {
   stroke-width: 5px;
   fill: black;
+}
+
+.optimum-line {
+  stroke: black;
+  fill: none;
+  stroke-width: 2px;
+  stroke-linecap: round;
+  stroke-dasharray: 1,5;
 }
 
 .slider-heading {

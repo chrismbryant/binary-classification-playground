@@ -23,13 +23,18 @@ let curves = {
     "prob-calibration": [],
     "cost": []
 };
+let probTexSize;
+let costTexSize;
 const equations = {
     "curve-neg-class": "f(s | y = 0)",
     "curve-pos-class": "f(s | y = 1)",
     "curve-dist": "f(s)",
     "calibration-curve": "P(s) := \\frac{f(s | y = 1)}{f(s)}",
     "calibration-line": "P(s) = s",
-    "curve-cost": "C(t)"
+    "curve-cost": "C(t = s)",
+    "optimum-coord-prob": "\\bigl(\\tau, P(\\tau)\\bigr)",
+    "optimum-coord-cost": "\\bigl(\\tau, C(\\tau)\\bigr)",
+    "optimal-threshold": "P(\\tau) = \\frac{k_{FP} + k_{TN} + k_{rev}}{k_{FP} + k_{FN} + k_{TN} + k_{TP}}"
 };
 
 const svgWidth = 600;
@@ -45,7 +50,7 @@ const sliderConfigs = [
     ["slider-TN-benefit", "Benefit (TN)", weights["TN"]],
     ["slider-review-cost", "Review Cost", weights["review"]],
     ["slider-neg-class", "Negative Class", 0],
-    ["slider-pos-class", "Positive Class", 1],
+    ["slider-pos-class", "Positive Class", 0.84],
     ["slider-class-imb", "Balance", 0.5],
     // ["slider-dist-shape", "Shape", 0.5]
 ];
@@ -70,11 +75,14 @@ function addViz(svgCost, svgDist, svgProb) {
     initDistCurve(svgDist);
     initBetaCurve("slider-neg-class", "curve-neg-class", "#1F77B4", svgDist);
     initBetaCurve("slider-pos-class", "curve-pos-class", "#FF7F0E", svgDist);
+    initProbOptimumLine(svgProb);
+    initCostOptimumLine(svgCost);
     initProbDiagonal(svgProb);
     initProbCalibration(svgProb);
     initCostCurve(svgCost);
     initOptimum("cost-optimum", svgCost);
     initOptimum("prob-optimum", svgProb);
+    initOptimumCoordTex(svgProb, svgCost, equations);
 
     updateBetaCurve("slider-neg-class", "curve-neg-class", svgDist, svgProb, svgCost);
     updateBetaCurve("slider-pos-class", "curve-pos-class", svgDist, svgProb, svgCost);
@@ -89,6 +97,7 @@ function addViz(svgCost, svgDist, svgProb) {
     addDescriptions(svgCost, equations);
     addDescriptions(svgProb, equations);
     addDescriptions(svgDist, equations);
+    
 }
 
 /** ---------------------------------- SETUP ---------------------------------- */
@@ -291,6 +300,20 @@ function initProbCalibration(svg) {
     addProbCalibration(svg);
 }
 
+function initProbOptimumLine(svg) {
+    svg.append("path")
+        .attr("id", "prob-optimum-line")
+        .attr("class", "optimum-line")
+        .attr("stroke-opacity", 0);
+}
+
+function initCostOptimumLine(svg) {
+    svg.append("path")
+        .attr("id", "cost-optimum-line")
+        .attr("class", "optimum-line")
+        .attr("stroke-opacity", 0);
+}
+
 function initCostCurve(svg) {
     svg.append("path")
         .attr("class", "curve thin")
@@ -301,6 +324,7 @@ function initCostCurve(svg) {
 
 function initOptimum(optId, svg) {
     svg.append("circle")
+        .attr("class", "optimum")
         .attr("id", optId)
         .attr("cx", 0)
         .attr("cy", 0)
@@ -308,6 +332,18 @@ function initOptimum(optId, svg) {
         .attr("stroke", "black")
         .attr("stroke-width", 2)
         .attr("fill", "white");
+}
+
+function initOptimumCoordTex(svgProb, svgCost, equations) {
+    const probTexId = "optimum-coord-prob";
+    const costTexId = "optimum-coord-cost";
+    const threshTexId = "optimal-threshold";
+    probTexSize = addTex(svgProb, equations[probTexId], probTexId);
+    costTexSize = addTex(svgCost, equations[costTexId], costTexId);
+
+    const w = svgProb.attr("width");
+    const h = svgProb.attr("height");
+    addTex(svgProb, equations[threshTexId], threshTexId, w - 10, h - 10);
 }
 
 /** ------------------------------ Style -------------------------------- */
@@ -323,9 +359,12 @@ function addHoverEmphasis(svg) {
         const minIndex = distances.indexOf(minDistance);
         const closestCurve = paths[minIndex].id
 
+        const optimumIsSelected = d3.select("#prob-optimum-line")
+            .attr("stroke-opacity") == 1;
+
         for (i in paths) {
             const path = paths[i];
-            if (path.id == closestCurve && minDistance < 30) {
+            if (path.id == closestCurve && minDistance < 40 && !optimumIsSelected) {
                 d3.select(`#${path.id}`)
                     .classed("smooth", true)
                     .classed("thick", true);
@@ -340,38 +379,45 @@ function addHoverEmphasis(svg) {
         }
     });
 
-    svg.on("mouseleave", function() {
-        d3.selectAll(".curve")
-            .classed("thick", false)
-            .classed("smooth", false);
-        d3.selectAll(".equation")
-            .classed("visible", false);
-    });
+    svg.on("mouseleave", removeHoverEmphasis);
+}
+
+function removeHoverEmphasis() {
+    d3.selectAll(".curve")
+        .classed("thick", false)
+        .classed("smooth", false);
+    d3.selectAll(".equation")
+        .classed("visible", false);
 }
 
 /** ------------------------------- `ADD` --------------------------------- */
 
 function addDescriptions(svg, equations) {
+    const curves = Array.from(svg.selectAll("path.curve")._groups[0]);
     const width = svg.attr("width");
     const height = svg.attr("height");
-    const curves = Array.from(svg.selectAll("path")._groups[0]);
     for (i in curves) {
         const curveId = curves[i].id;
         const eqId = `${curveId}-equation`;
-        let g = svg.append("g")
-            .attr("class", "equation smooth")
-            .attr("id", eqId);
-
-        g.append(() => MathJax.tex2svg(equations[curveId]).querySelector("svg"));
-
-        const eqBBox = document.getElementById(eqId).getBBox();
-        const eqWidth = eqBBox.width;
-        const eqHeight = eqBBox.height;
-
-        g.attr("transform", `translate(
-            ${width - eqWidth - 15}, 
-            ${height - eqHeight - 15})`)
+        addTex(svg, equations[curveId], eqId, width - 15, height - 15);
     }
+}
+
+function addTex(svg, tex, texId, x = 0, y = 0) {
+    const width = svg.attr("width");
+    const height = svg.attr("height");
+    let g = svg.append("g")
+        .attr("class", "equation smooth")
+        .attr("id", texId);
+    g.append(() => MathJax.tex2svg(tex).querySelector("svg"));
+    const texBBox = document.getElementById(texId).getBBox();
+    const texWidth = texBBox.width;
+    const texHeight = texBBox.height;
+    g.attr("transform", `translate(
+        ${x - texWidth}, 
+        ${y - texHeight})`);
+    const texSize = [texWidth, texHeight];
+    return texSize;
 }
 
 function addSVG(svgTable, id, label, width, height) {
@@ -514,12 +560,22 @@ function addOptimum(weights, svgCost, svgProb) {
     const prob = getOptimum(weights);
     const [score, index] = getScoreFromProb(prob);
 
+    // Add circle at Cost optimum
     const coordsCost = curves["cost"][index];
     const [xCost, yCost] = getPosition(coordsCost, costRng, svgCost);
     d3.select("#cost-optimum")
         .attr("cx", xCost)
         .attr("cy", yCost);
+    d3.select("#cost-optimum-line")
+        .attr("d", `M 
+            ${xCost} ${svgCost.attr("height")} L 
+            ${xCost} ${yCost}`);
+    d3.select("#optimum-coord-cost")
+        .attr("transform", `translate(
+            ${xCost - probTexSize[0] / 2},
+            ${yCost - probTexSize[1] - 10})`);
 
+    // Add circle at Probability corresponding to Cost optimum
     if (curves["prob-calibration"].length != 0) {
         const iMax = curves["prob-calibration"].length - 1
         const i = Math.min(index + 1, iMax);
@@ -528,7 +584,33 @@ function addOptimum(weights, svgCost, svgProb) {
         d3.select("#prob-optimum")
             .attr("cx", xProb)
             .attr("cy", yProb);
+        d3.select("#prob-optimum-line")
+            .attr("d", `M 
+                0 ${yProb} L 
+                ${xProb} ${yProb} L
+                ${xProb} 0`);
+        d3.select("#optimum-coord-prob")
+            .attr("transform", `translate(
+                ${xProb - probTexSize[0] - 10},
+                ${yProb - probTexSize[1] - 5})`);
     }
+
+    // Set mouseover behavior to show guide lines and equations
+    d3.selectAll(".optimum")
+        .on("mouseover", function () {
+            d3.selectAll(".optimum-line")
+                .classed("smooth", true)
+                .attr("stroke-opacity", 1);
+            d3.select("#optimum-coord-prob").classed("visible", true);
+            d3.select("#optimum-coord-cost").classed("visible", true);
+            d3.select("#optimal-threshold").classed("visible", true);
+        }).on("mouseout", function () {
+            d3.selectAll(".optimum-line")
+                .attr("stroke-opacity", 0);
+            d3.select("#optimum-coord-prob").classed("visible", false);
+            d3.select("#optimum-coord-cost").classed("visible", false);
+            d3.select("#optimal-threshold").classed("visible", false);
+        })
 }
 
 /** -------------------------------- `UPDATE` -------------------------------- */
