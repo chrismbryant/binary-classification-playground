@@ -16,8 +16,8 @@ svg {
   margin: 0 auto;
   background-color: white;
   border: 1px solid black;
-  -webkit-transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
-  transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+  -webkit-transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+  transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
 svg:hover {
@@ -65,8 +65,8 @@ td.padded {
 }
 
 .smooth {
-  -webkit-transition: 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-  transition: 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+  -webkit-transition: 0.1s ease-in-out;
+  transition: 0.1s ease-in-out;
 }
 
 .extra-thin {
