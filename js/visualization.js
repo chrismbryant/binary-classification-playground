@@ -47,7 +47,7 @@ const sliderConfigs = [
     ["slider-neg-class", "Negative Class", 0],
     ["slider-pos-class", "Positive Class", 1],
     ["slider-class-imb", "Balance", 0.5],
-    ["slider-dist-shape", "Shape", 0.5]
+    // ["slider-dist-shape", "Shape", 0.5]
 ];
 
 // Run all
