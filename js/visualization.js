@@ -23,6 +23,14 @@ let curves = {
     "prob-calibration": [],
     "cost": []
 };
+const equations = {
+    "curve-neg-class": "f(s | y = 0)",
+    "curve-pos-class": "f(s | y = 1)",
+    "curve-dist": "f(s)",
+    "calibration-curve": "P(s) := \\frac{f(s | y = 1)}{f(s)}",
+    "calibration-line": "P(s) = s",
+    "curve-cost": "C(t)"
+};
 
 const svgWidth = 600;
 const curveResolution = 500;
@@ -46,7 +54,6 @@ const sliderConfigs = [
 main();
 
 function main() {
-
     let [svgCost, svgDist, svgProb] = setupPage(svgWidth);
     addSpinner(svgCost);
     addSpinner(svgDist);
@@ -78,6 +85,10 @@ function addViz(svgCost, svgDist, svgProb) {
     updateCostCurve("slider-TP-benefit", svgCost, svgProb);
     updateCostCurve("slider-TN-benefit", svgCost, svgProb);
     updateCostCurve("slider-review-cost", svgCost, svgProb);
+
+    addDescriptions(svgCost, equations);
+    addDescriptions(svgProb, equations);
+    addDescriptions(svgDist, equations);
 }
 
 /** ---------------------------------- SETUP ---------------------------------- */
@@ -247,17 +258,15 @@ function getPosition(data, yRng, svg) {
 
 function initBetaCurve(sliderId, curveId, color, svgDist, svgProb) {
     svgDist.append("path")
-        .attr("class", "curve")
+        .attr("class", "curve thin")
         .attr("id", curveId)
-        .attr("stroke-width", 3)
         .attr("stroke", color);
 }
 
 function initDistCurve(svg) {
     svg.append("path")
-        .attr("class", "curve")
+        .attr("class", "curve thin")
         .attr("id", "curve-dist")
-        .attr("stroke-width", 3)
         .attr("stroke", "#2ca02c");
     addDistCurve(svg);
 }
@@ -266,30 +275,26 @@ function initProbDiagonal(svg) {
     const w = svg.attr("width");
     const h = svg.attr("height");
     svg.append("path")
-        .attr("class", "curve")
+        .attr("class", "curve extra-thin")
         .attr("id", "calibration-line")
-        .attr("stroke-width", 2)
         .attr("stroke", "black")
         .attr("stroke-opacity", 0.5)
         .attr("stroke-dasharray", "5,5")
         .attr("d", `M 0 ${h} L ${w} 0`);
-    highlightCurve("#calibration-line");
 }
 
 function initProbCalibration(svg) {
     svg.append("path")
-        .attr("class", "curve")
+        .attr("class", "curve thin")
         .attr("id", "calibration-curve")
-        .attr("stroke-width", 3)
         .attr("stroke", "#5c6068")
     addProbCalibration(svg);
 }
 
 function initCostCurve(svg) {
     svg.append("path")
-        .attr("class", "curve")
+        .attr("class", "curve thin")
         .attr("id", "curve-cost")
-        .attr("stroke-width", 3)
         .attr("stroke", "#d62728");
     addCostCurve(svg);
 }
@@ -307,35 +312,66 @@ function initOptimum(optId, svg) {
 
 /** ------------------------------ Style -------------------------------- */
 
-function highlightCurve(objectId) {
-    let object = d3.select(objectId);
-    defaultStrokeWidth = object.attr("stroke-width");
-    object
-        .on("mouseover", function() {
-            d3.select(this).transition()
-                .ease(d3.easeQuadInOut)
-                .duration(100)
-                .attr("stroke-width", 5);})
-        .on("mouseout", function() {
-            d3.select(this).transition()
-                .ease(d3.easeQuadInOut)
-                .duration(100)
-                .attr("stroke-width", defaultStrokeWidth);
-        });
+function addHoverEmphasis(svg) {
+    
+    svg.on("mousemove", function() {
+        const m = d3.mouse(this);
+        const paths = Array.from(svg.selectAll("path.curve")._groups[0]).reverse();
+        const closestPoints = paths.map(path => closestPoint(path, m));
+        const distances = closestPoints.map(p => Math.floor(p.distance));
+        const minDistance = Math.min(...distances);
+        const minIndex = distances.indexOf(minDistance);
+        const closestCurve = paths[minIndex].id
+
+        for (i in paths) {
+            const path = paths[i];
+            if (path.id == closestCurve && minDistance < 30) {
+                d3.select(`#${path.id}`)
+                    .classed("smooth", true)
+                    .classed("thick", true);
+                d3.select(`#${path.id}-equation`)
+                    .classed("visible", true);
+            } else {
+                d3.select(`#${path.id}`)
+                    .classed("thick", false);
+                d3.select(`#${path.id}-equation`)
+                    .classed("visible", false);
+            }
+        }
+    });
+
+    svg.on("mouseleave", function() {
+        d3.selectAll(".curve")
+            .classed("thick", false)
+            .classed("smooth", false);
+        d3.selectAll(".equation")
+            .classed("visible", false);
+    });
 }
 
 /** ------------------------------- `ADD` --------------------------------- */
 
-function addDescription(svg, description) {
+function addDescriptions(svg, equations) {
     const width = svg.attr("width");
     const height = svg.attr("height");
-    svg.append("text")
-        .attr("text-anchor", "end")
-        .attr("x", width - 10)
-        .attr("y", height - 10)
-        .attr("font-size", 14)
-        // .text("$P(s) = \\frac{A}{B}$");
-        // .text(description);
+    const curves = Array.from(svg.selectAll("path")._groups[0]);
+    for (i in curves) {
+        const curveId = curves[i].id;
+        const eqId = `${curveId}-equation`;
+        let g = svg.append("g")
+            .attr("class", "equation smooth")
+            .attr("id", eqId);
+
+        g.append(() => MathJax.tex2svg(equations[curveId]).querySelector("svg"));
+
+        const eqBBox = document.getElementById(eqId).getBBox();
+        const eqWidth = eqBBox.width;
+        const eqHeight = eqBBox.height;
+
+        g.attr("transform", `translate(
+            ${width - eqWidth - 15}, 
+            ${height - eqHeight - 15})`)
+    }
 }
 
 function addSVG(svgTable, id, label, width, height) {
@@ -353,7 +389,7 @@ function addSVG(svgTable, id, label, width, height) {
         .attr("y", 20)
         .attr("font-size", 14)
         .text(label);
-    addDescription(svg, "Hello!");
+    addHoverEmphasis(svg);
     return svg;
 }
 
@@ -447,7 +483,6 @@ function addBetaCurve(k, curveId, svg) {
     const path = getPath(pdf, [0, betaMax], svg);
     d3.select(`#${curveId}`).attr("d", path);
     curves[curveId] = pdf;
-    highlightCurve(`#${curveId}`);
 }
 
 function addDistCurve(svg) {
@@ -456,7 +491,6 @@ function addDistCurve(svg) {
         curves["curve-neg-class"]);
     const path = getPath(curves["dist"], [0, betaMax], svg);
     svg.select("#curve-dist").attr("d", path);
-    highlightCurve("#curve-dist");
 }
 
 function addProbCalibration(svg) {
@@ -464,8 +498,7 @@ function addProbCalibration(svg) {
         curves["curve-pos-class"],
         curves["dist"]);
     const path = getPath(curves["prob-calibration"], [0, 1], svg);
-    d3.select("#calibration-curve").attr("d", path)
-    highlightCurve("#calibration-curve");
+    d3.select("#calibration-curve").attr("d", path);
 }
 
 function addCostCurve(svg) {
@@ -474,7 +507,7 @@ function addCostCurve(svg) {
     curves["cost"] = getCostCurve(kPos, kNeg);
     const path = getPath(curves["cost"], costRng, svg);
     d3.select("#curve-cost").attr("d", path);
-    highlightCurve("#curve-cost");}
+}
 
 function addOptimum(weights, svgCost, svgProb) {
     

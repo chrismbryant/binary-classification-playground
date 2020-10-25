@@ -55,8 +55,31 @@ td.padded {
   text-align: center;
 }
 
-.curve {
-  cursor: pointer;
+.equation {
+  opacity: 0;
+  font-size: 20;
+}
+
+.visible {
+  opacity: 1;
+}
+
+.smooth {
+  -webkit-transition: 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+  transition: 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.extra-thin {
+  stroke-width: 2px;
+}
+
+.thin {
+  stroke-width: 3px;
+}
+
+.thick {
+  stroke-width: 5px;
+  fill: black;
 }
 
 .slider-heading {
