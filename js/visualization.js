@@ -110,6 +110,7 @@ function setupPage(svgWidth) {
     let contentTable = content
         .append("div")
         .attr("id", "main-table")
+        .attr("class", "vertical-center")
         .append("table");
     addFooter(content);
     
@@ -151,7 +152,6 @@ function addFooter(content) {
 
     const iconSize = 30;
 
-    content.append("div").attr("class", "push");
     let footer = content.append("footer");
 
     let row = footer
