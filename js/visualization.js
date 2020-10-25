@@ -106,7 +106,7 @@ function setupPage(svgWidth) {
         .text("Binary Misclassification Cost")
         .attr("class", "title");
 
-    contentTable.append("tr").append("td").append("br")
+    contentTable.append("tr").append("td");
     contentTable = contentTable.append("tr");
 
     // Add SVGs
