@@ -1,5 +1,7 @@
 /** ------------------------------- GLOBALS & RUN --------------------------------- */
 
+const mediumLink = "https://medium.com/@cbryant_67006/choosing-the-right-model-threshold-a91bc48f354";
+const gitHubLink = "https://github.com/chrismbryant/binary-classification-playground";
 const stdlibPath = "https://unpkg.com/@stdlib/stdlib@0.0.91/dist/stdlib-flat.min.js";
 
 let anticalibrated = false;
@@ -105,7 +107,11 @@ function addViz(svgCost, svgDist, svgProb) {
 function setupPage(svgWidth) {
     
     let content = d3.select("#content");
-    let contentTable = content.append("table");
+    let contentTable = content
+        .append("div")
+        .attr("id", "main-table")
+        .append("table");
+    addFooter(content);
     
     // Add title
     contentTable.append("tr")
@@ -139,6 +145,43 @@ function setupPage(svgWidth) {
         .attr("id", "sliders");
     
     return [svgCost, svgDist, svgProb];
+}
+
+function addFooter(content) {
+
+    const iconSize = 30;
+
+    content.append("div").attr("class", "push");
+    let footer = content.append("footer");
+
+    let row = footer
+        .append("table")
+        .attr("class", "footer-table")
+        .append("tr");
+
+    let gitHub = row.append("a")
+        .attr("href", gitHubLink)
+        .attr("target", "_blank")
+    let divider = row.append("td")
+        .append("span")
+        .attr("class", "vertical-line");
+    let medium = row.append("a")
+        .attr("href", mediumLink)
+        .attr("target", "_blank")
+
+    gitHub.append("td")
+        .text("Source Code");
+    gitHub.append("td")
+        .append("img")
+        .attr("src", "./img/github-logo.png")
+        .attr("height", iconSize);
+
+    medium.append("td")
+        .append("img")
+        .attr("src", "./img/medium-logo.png")
+        .attr("height", iconSize);
+    medium.append("td")
+        .text("Blog Post");
 }
 
 /** -------------------------------- `GET` -------------------------------- */

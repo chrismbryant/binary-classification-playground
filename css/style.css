@@ -10,6 +10,44 @@ body {
   padding-top: 30px;
 }
 
+footer {
+  padding: 3px;
+  color: #3d3d3d;
+  background-color: #e8e8e8;
+  padding-top: 8px;
+  padding-bottom: 2px;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+}
+
+table.footer-table td {
+  font-size: 14px;
+  font-style: italic;
+  vertical-align: middle;
+}
+
+.push {
+  height: 0px;
+}
+
+.footer-text {
+  font-style: italic;
+}
+
+/* See: https://www.tutorialrepublic.com/faq/how-to-create-a-vertical-line-in-html.php */
+.vertical-line {
+  display: inline-block;
+  border-left: 1px solid #ccc;
+  margin: 0 10px;
+  height: 30px;
+}
+
+a, a:link, a:visited {
+  color: #3d3d3d;
+  text-decoration: none;
+}
+
 /* See: https://tobiasahlin.com/blog/how-to-animate-box-shadow/ */
 svg.svg-plot {
   display: block;
