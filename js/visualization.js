@@ -137,6 +137,7 @@ function setupPage(svgWidth) {
         svgTable, "svg-prob-calibration", "Probability Calibration", svgWidth, 200);
     let svgDist = addSVG(
         svgTable, "svg-dist", "Model Distribution", svgWidth, 200);
+    addAxisSVG(svgTable, svgWidth);
 
     contentTable.append("td").attr("class", "padded");
 
@@ -463,12 +464,51 @@ function addTex(svg, tex, texId, x = 0, y = 0) {
     return texSize;
 }
 
+function addAxisSVG(svgTable, width) {
+
+    const strokeWidth = 1;
+    const triangleLength = 14;
+    const hGap = 20;
+    const vGap = 1;
+    const height = 20;
+    const w = width - hGap;
+    const h = 12;
+
+    let axis = d3.select("#td-svg-dist")
+        .append("svg")
+        .attr("class", "svg-axis")
+        .attr("width", width)
+        .attr("height", height);
+    
+    axis.append("path").attr("d", `M 1 ${h/2} L ${w} ${h/2}`); // Horiz. line
+    axis.append("path").attr("d", `M 1 0 L 1 ${h}`); // Left vertical line
+    axis.append("path").attr("d", `M ${width/2} 2 L ${width/2} ${h - 2}`);
+    axis.append("path").attr("d", `M ${width/4} 2 L ${width/4} ${h - 2}`);
+    axis.append("path").attr("d", `M ${width*3/4} 2 L ${width*3/4} ${h - 2}`);
+
+    // Triangle (arrow tip)
+    axis.append("path")
+        .attr("fill", "black")
+        .attr("d", `M 
+            ${w - triangleLength} ${vGap} L
+            ${w - triangleLength} ${h - vGap} L
+            ${w} ${h/2} Z`)
+
+    // Axis label
+    let g = axis.append("g").attr("id", "axis-s");
+    g.append(() => MathJax.tex2svg("s").querySelector("svg"));
+    const sHeight = document.getElementById("axis-s").getBBox().height;
+    g.attr("transform", `translate(
+        ${w + 0.3 * hGap}, 
+        ${h - 1.05 * sHeight})`);
+
+}
+
 function addSVG(svgTable, id, label, width, height) {
     let svg = svgTable
         .append("tr")
-        .attr("class", "svg-table")
         .append("td")
-        .attr("class", "svg-table")
+        .attr("id", `td-${id}`)
         .append("svg")
         .attr("id", id)
         .attr("class", "svg-plot")

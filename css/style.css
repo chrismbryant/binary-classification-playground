@@ -16,8 +16,9 @@ footer {
   background-color: #e8e8e8;
   padding-top: 8px;
   padding-bottom: 2px;
-  position: absolute;
-  bottom: 0;
+  /*position: absolute;*/
+  margin-top: 10px;
+  /*bottom: 0;*/
   width: 100%;
 }
 
@@ -28,12 +29,12 @@ table.footer-table td {
 }
 
 .vertical-center {
-  margin: 0;
+  /*margin: 0;
   position: absolute;
   top: 50%;
   left: 50%;
   -ms-transform: translate(-50%, -55%);
-  transform: translate(-50%, -55%);
+  transform: translate(-50%, -55%);*/
 }
 
 .footer-text {
@@ -67,6 +68,20 @@ svg.svg-plot:hover {
   box-shadow: 2px 5px 10px rgba(0,0,0,0.3);
   -webkit-transform: scale(1.03, 1.03);
   transform: scale(1.03, 1.03);
+}
+
+svg.svg-axis {
+  background-color: white;
+}
+
+svg.svg-axis path {
+  stroke: black;
+  stroke-width: 1;
+}
+
+.axis-row {
+  padding-top: 0!important;
+  padding-bottom: 0;
 }
 
 table {
