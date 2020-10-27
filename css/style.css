@@ -8,6 +8,7 @@
 body {
   background-color: white;
   padding-top: 30px;
+  width: 100%;
 }
 
 footer {
@@ -70,11 +71,11 @@ svg.svg-plot:hover {
   transform: scale(1.03, 1.03);
 }
 
-svg.svg-axis {
+#axis-svg {
   background-color: white;
 }
 
-svg.svg-axis path {
+#axis-svg path {
   stroke: black;
   stroke-width: 1;
 }
@@ -203,12 +204,20 @@ td.padded {
 }
 
 /* See: https://www.w3schools.com/howto/tryit.asp?filename=tryhow_css_tooltip */
-.hasTooltip {
+.has-tooltip {
   position: relative;
   display: inline-block;
 }
 
-.hasTooltip .tooltiptext {
+#axis-div .tooltiptext{
+  width: 240px;
+  margin-left: 0%;
+  left: 98.7%;
+  bottom: 100%;
+  transform: translateX(-50%);
+}
+
+.has-tooltip .tooltiptext {
   visibility: hidden;
   width: 80px;
   margin-left: -40px;
@@ -225,7 +234,7 @@ td.padded {
   transition: opacity 0.3s;
 }
 
-.hasTooltip .tooltiptext::after {
+.has-tooltip .tooltiptext::after {
   content: "";
   position: absolute;
   top: 100%;
@@ -236,7 +245,7 @@ td.padded {
   border-color: #555 transparent transparent transparent;
 }
 
-.hasTooltip:hover .tooltiptext {
+.has-tooltip:hover .tooltiptext {
   visibility: visible;
   opacity: 1;
 }

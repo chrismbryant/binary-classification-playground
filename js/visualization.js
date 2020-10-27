@@ -475,8 +475,11 @@ function addAxisSVG(svgTable, width) {
     const h = 12;
 
     let axis = d3.select("#td-svg-dist")
+        .append("div")
+        .attr("id", "axis-div")
+        .attr("class", "has-tooltip")
         .append("svg")
-        .attr("class", "svg-axis")
+        .attr("id", "axis-svg")
         .attr("width", width)
         .attr("height", height);
     
@@ -501,6 +504,9 @@ function addAxisSVG(svgTable, width) {
     g.attr("transform", `translate(
         ${w + 0.3 * hGap}, 
         ${h - 1.05 * sHeight})`);
+
+    const tooltipWidth = 240; 
+    addTooltip("axis-div", "Model Output Score");
 
 }
 
@@ -563,8 +569,9 @@ function addSliderTable(sliderConfigs, sliderResolution) {
 
 function addTooltip(divId, text) {
     d3.select(`#${divId}`)
-        .classed("hasTooltip", true)
+        .classed("has-tooltip", true)
         .append("span")
+        .attr("id", `${divId}-tooltip`)
         .attr("class", "tooltiptext")
         .text(text);
 }
