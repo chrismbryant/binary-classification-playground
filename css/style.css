@@ -72,7 +72,7 @@ svg.svg-plot:hover {
 }
 
 #axis-svg {
-  background-color: white;
+  background-color: transparent;
 }
 
 #axis-svg path {
