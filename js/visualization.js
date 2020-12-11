@@ -1,6 +1,6 @@
 /** ------------------------------- GLOBALS & RUN --------------------------------- */
 
-const mediumLink = "https://medium.com/@cbryant_67006/choosing-the-right-model-threshold-a91bc48f354";
+const mediumLink = "https://medium.com/acorns-data-blog/choosing-the-right-model-threshold-a91bc48f354";
 const gitHubLink = "https://github.com/chrismbryant/binary-classification-playground";
 const stdlibPath = "https://unpkg.com/@stdlib/stdlib@0.0.91/dist/stdlib-flat.min.js";
 
